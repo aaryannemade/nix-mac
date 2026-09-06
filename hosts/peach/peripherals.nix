@@ -16,6 +16,15 @@
   # here so the dependency is visible rather than inherited invisibly.
   hardware.enableRedistributableFirmware = true;
 
+  # cfg80211 otherwise starts in the world regulatory domain (country 00),
+  # where 5 GHz scanning is passive-only. Setting India explicitly makes the
+  # BCM43602 actively scan the locally permitted 5 GHz channels; without it,
+  # the `vite` network was not discoverable. This is the persistent equivalent
+  # of the successfully tested `iw reg set IN` command.
+  boot.extraModprobeConfig = ''
+    options cfg80211 ieee80211_regdom=IN
+  '';
+
   hardware.bluetooth.enable = true;
 
   # ---- Webcam ---------------------------------------------------------------

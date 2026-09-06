@@ -47,6 +47,10 @@ driver supports BCM4360 and older and does not claim 43602 — installing it
 gives you *no* wireless. nixpkgs' own `hardware/network/broadcom-43xx.nix` is a
 single line enabling redistributable firmware, nothing more.
 
+The regulatory domain is pinned to India (`IN`) in `peripherals.nix`. Leaving
+cfg80211 at its default world domain (`00`) prevented the BCM43602 from finding
+the `vite` 5 GHz network; `iw reg set IN` confirmed the fix on the machine.
+
 **The R9 M370X is GCN 1.0.** PCI `1002:6821`, "Venus XT", a Cape Verde rebrand,
 i.e. Southern Islands. The config uses `linuxPackages_latest`, matching the
 graphical installer generation where the internal panel is known to work.
