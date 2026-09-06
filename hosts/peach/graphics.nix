@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   # MacBookPro11,5 has two GPUs sitting behind Apple's gmux multiplexer:
@@ -7,27 +7,18 @@
   #   AMD Radeon R9 M370X  - PCI 1002:6821, "Venus XT"
   #
   # ---- AMD ------------------------------------------------------------------
-  # "Venus XT" is a Cape Verde rebrand, which makes it GCN 1.0, a.k.a. Southern
-  # Islands. The kernel binds SI parts to the legacy `radeon` driver by default
-  # and `amdgpu` refuses to claim them unless explicitly told to, so both halves
-  # of the handover have to be spelled out: radeon lets go, amdgpu picks up.
-  #
-  # amdgpu is what gets us Vulkan (radv, which only speaks to amdgpu) and
-  # well-behaved atomic modesetting under Plasma 6 on Wayland. AMD still labels
-  # SI support here "experimental", though it has been in tree for years.
-  #
-  # Recovery: if the machine ever fails to reach a display, delete these two
-  # params. The kernel falls back to `radeon`, which loses Vulkan and is slower
-  # but is extremely well tested on this generation.
-  boot.kernelParams = [
-    "radeon.si_support=0"
-    "amdgpu.si_support=1"
-  ];
-
-  # Load amdgpu in stage 1 so the console and ly come up on the real driver
-  # rather than efifb. nixos-hardware already does the equivalent for i915 via
-  # hardware.intelgpu.loadInInitrd.
-  boot.initrd.kernelModules = [ "amdgpu" ];
+  # Use the same kernel series as the graphical installer, where the panel is
+  # known to work. NixOS 26.05's default 6.18 kernel bound the GPU but failed
+  # Atomic Mode Setting and produced a permanently black internal display.
+  # Kernel 7.2 selects amdgpu for this SI device without override parameters.
+  boot.kernelPackages = pkgs.linuxPackages_latest.extend (_final: previous: {
+    # Linux 7.2 removed vb2_ops.wait_prepare/wait_finish and stopped exposing
+    # string functions through indirect includes. facetimehd 0.6.13 still uses
+    # the old API; remove the now-unnecessary callbacks and include string.h.
+    facetimehd = previous.facetimehd.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./patches/facetimehd-linux-7.2.patch ];
+    });
+  });
 
   # ---- Intel ----------------------------------------------------------------
   # nixos-hardware's 11-5 module imports common/cpu/intel, the *generic* Intel
@@ -43,12 +34,7 @@
     enable32Bit = true;
   };
 
-  # Only consulted for the X11 session; Plasma 6 defaults to Wayland.
-  services.xserver.videoDrivers = [
-    "amdgpu"
-    "modesetting"
-  ];
-
+  # Let Xorg and KWin probe the GPUs rather than forcing an Xorg Screen section.
   # NOTE: which GPU actually drives the internal panel is decided by Apple's
   # EFI before Linux starts, and on this model that is normally the AMD part.
   # vga_switcheroo can hand the panel over to the Intel GPU at runtime

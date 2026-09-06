@@ -11,6 +11,7 @@
     ./network.nix
     ./shell.nix
     ./sound.nix
+    ./ssh.nix
     ./unfree.nix
     ./users.nix
   ];

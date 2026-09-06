@@ -1,0 +1,24 @@
+diff --git a/fthd_v4l2.c b/fthd_v4l2.c
+index c504d32..29f5061 100644
+--- a/fthd_v4l2.c
++++ b/fthd_v4l2.c
+@@ -9,5 +9,6 @@
+ 
+ #include <linux/kernel.h>
++#include <linux/string.h>
+ #include <linux/spinlock.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+@@ -303,8 +304,6 @@ static struct vb2_ops vb2_queue_ops = {
+ 	.start_streaming        = fthd_start_streaming,
+ 	.stop_streaming         = fthd_stop_streaming,
+ 	.buf_queue              = fthd_buffer_queue,
+-	.wait_prepare           = vb2_ops_wait_prepare,
+-	.wait_finish            = vb2_ops_wait_finish,
+ };
+ 
+ static struct v4l2_file_operations fthd_vdev_fops = {
+@@ -388,2 +387,2 @@ static int fthd_v4l2_ioctl_enum_fmt_vid_cap(struct file *file, void *fh,
+ 	fmt->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+-	strncpy(fmt->description, desc, sizeof(fmt->description));
++	strscpy(fmt->description, desc, sizeof(fmt->description));

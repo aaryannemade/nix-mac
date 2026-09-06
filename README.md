@@ -30,7 +30,7 @@ hardware lives under `hosts/peach/`.
 
 - zsh (system shell + home-manager config: oh-my-zsh, autosuggestions, syntax highlighting)
 - LibreWolf (default browser, VA-API hardware decode, persistent sessions)
-- ly display manager, KDE Plasma 6
+- SDDM display manager, KDE Plasma 6
 - PipeWire, NetworkManager, Bluetooth, systemd-boot
 - Radeon R9 M370X on `amdgpu`, Iris Pro 5200 on `i915`
 - FaceTime HD webcam (`facetimehd`)
@@ -48,11 +48,11 @@ gives you *no* wireless. nixpkgs' own `hardware/network/broadcom-43xx.nix` is a
 single line enabling redistributable firmware, nothing more.
 
 **The R9 M370X is GCN 1.0.** PCI `1002:6821`, "Venus XT", a Cape Verde rebrand,
-i.e. Southern Islands. The kernel gives SI parts to the legacy `radeon` driver
-by default, so `hosts/peach/graphics.nix` explicitly hands it to `amdgpu`
-(`radeon.si_support=0 amdgpu.si_support=1`) to get Vulkan and clean atomic
-modesetting under Plasma 6 Wayland. **If the machine won't reach a display,
-delete those two kernel params** — the fallback to `radeon` is well tested.
+i.e. Southern Islands. The config uses `linuxPackages_latest`, matching the
+graphical installer generation where the internal panel is known to work.
+Kernel 7.2 selects `amdgpu` for this device without override parameters. The
+stable 6.18 kernel initialized the GPU but failed Atomic Mode Setting and left
+the internal panel black, so do not force this machine back to that kernel.
 
 **GPU switching is not configured.** Apple's EFI picks which GPU drives the
 internal panel before Linux starts, normally the AMD one. Running on the Intel
