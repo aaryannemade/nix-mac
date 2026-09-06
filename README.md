@@ -18,7 +18,9 @@ hosts/
     peripherals.nix    wifi firmware, webcam
     power.nix          power profiles, thermals, fans
 system/                generic system policy
-modules/               home-manager modules
+modules/
+  browsers/            librewolf
+  shell/               zsh
 ```
 
 `system/` is machine-agnostic policy; anything specific to this laptop's
@@ -27,6 +29,7 @@ hardware lives under `hosts/peach/`.
 ## What's enabled
 
 - zsh (system shell + home-manager config: oh-my-zsh, autosuggestions, syntax highlighting)
+- LibreWolf (default browser, VA-API hardware decode, persistent sessions)
 - ly display manager, KDE Plasma 6
 - PipeWire, NetworkManager, Bluetooth, systemd-boot
 - Radeon R9 M370X on `amdgpu`, Iris Pro 5200 on `i915`
