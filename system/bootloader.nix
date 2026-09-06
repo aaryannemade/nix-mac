@@ -7,7 +7,9 @@
   boot.loader = {
     systemd-boot = {
       enable = true;
-      configurationLimit = 5;
+      # Apple's existing EFI partition is only 200 MB. The initrd is around
+      # 80 MB, so retaining five boot generations fills it immediately.
+      configurationLimit = 2;
     };
 
     efi = {
