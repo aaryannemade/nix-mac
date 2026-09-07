@@ -58,10 +58,36 @@ Kernel 7.2 selects `amdgpu` for this device without override parameters. The
 stable 6.18 kernel initialized the GPU but failed Atomic Mode Setting and left
 the internal panel black, so do not force this machine back to that kernel.
 
-**GPU switching is not configured.** Apple's EFI picks which GPU drives the
-internal panel before Linux starts, normally the AMD one. Running on the Intel
-iGPU is a large battery win but needs an `apple-set-os` EFI shim in the ESP to
-do reliably. Not set up.
+**The internal panel runs on the Intel iGPU.** Apple's firmware normally powers
+the iGPU down for non-macOS boot loaders and routes the panel to the AMD GPU.
+`graphics.nix` handles both independent firmware decisions:
+
+- A packaged `apple_set_os` EFI shim occupies both firmware entry points,
+  `EFI/BOOT/BOOTX64.EFI` and `EFI/systemd/systemd-bootx64.efi`, identifies the
+  boot as macOS, then chainloads the real systemd-boot from the maintained
+  `EFI/BOOT/BOOTX64_SYSTEMD.EFI` copy.
+- The `gpu-power-prefs` EFI variable asks the firmware to route the panel to the
+  integrated GPU on the next boot. The setting is persistent across reboots.
+- Once i915 owns the panel, `vga_switcheroo` powers the unused AMD GPU down at
+  boot and after resume. `amdgpu` runtime PM is unavailable behind Apple's gmux.
+
+The tested result is `card1-eDP-1` on PCI `0000:00:02.0`, i915 as the primary
+framebuffer, and `DIS: :Off` in `vga_switcheroo`. Idle battery draw fell by
+about 6 W from switching and reached about 15 W in power-saver mode at low
+brightness, versus roughly 27 W in the original dGPU-only state.
+
+This is integrated-only during normal operation, not seamless dynamic
+switching: the AMD card cannot be used for PRIME offload while it is powered
+off. Set `panelGpu = "discrete"` near the top of `graphics.nix`, rebuild, and
+reboot to return to the AMD-driven mode.
+
+**GPU recovery.** An NVRAM reset (hold Command-Option-P-R through two startup
+chimes) clears `gpu-power-prefs` and returns the panel to the AMD default. On
+the first NixOS boot after a reset, the declarative service writes the Intel
+preference again; reboot once more to apply it. If the EFI shim itself is the
+problem, hold Option and boot macOS, mount the EFI partition, then replace
+both `EFI/BOOT/BOOTX64.EFI` and `EFI/systemd/systemd-bootx64.efi` with the
+maintained rescue copy `EFI/BOOT/BOOTX64_SYSTEMD.EFI`.
 
 **nixos-hardware's 11-5 profile has a gap**: it imports the generic Intel CPU
 profile rather than the Haswell one (which 11-4 gets right), so it would
@@ -134,8 +160,9 @@ lspci -k | grep -A3 VGA        # amdgpu bound to 1002:6821, i915 to the Intel
 lsmod | grep -E 'brcmfmac|facetimehd|applesmc'
 vainfo                         # VA-API
 vulkaninfo --summary           # radv should appear
-systemctl status mbpfan thermald power-profiles-daemon
-cat /sys/kernel/debug/vgaswitcheroo/switch   # (as root) which GPU has the panel
+systemctl status mbpfan thermald power-profiles-daemon dgpu-off
+ls /sys/bus/pci/devices/0000:00:02.0/drm/*-eDP-*  # panel is on Intel
+sudo cat /sys/kernel/debug/vgaswitcheroo/switch    # IGD:+:Pwr, DIS: :Off
 ```
 
 ## Not handled yet

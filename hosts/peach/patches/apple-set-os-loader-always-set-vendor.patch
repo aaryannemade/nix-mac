@@ -1,0 +1,79 @@
+diff --git a/bootx64_silent.c b/bootx64_silent.c
+index 373e51f..91cd2f9 100644
+--- a/bootx64_silent.c
++++ b/bootx64_silent.c
+@@ -91,0 +92,12 @@ typedef struct {
++/*
++ * Diagnostics. The shim runs before any kernel exists, so a silent failure is
++ * indistinguishable from a working boot until you inspect the GPU from
++ * userspace. Building with -DAPPLE_SET_OS_VERBOSE makes it narrate to the EFI
++ * console and pause, which is the only way to see what the firmware said.
++ */
++#ifdef APPLE_SET_OS_VERBOSE
++#define ASO_LOG(s) SystemTable->ConOut->OutputString(SystemTable->ConOut, (CHAR16*)(s))
++#else
++#define ASO_LOG(s) ((void)0)
++#endif
++
+@@ -98 +110 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
+-    EFI_HANDLE* AppleSetOsHandleBuf;
++    EFI_HANDLE* AppleSetOsHandleBuf = NULL;
+@@ -109,0 +122,13 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
++    /* On failure the out-parameters are undefined; do not free or index them. */
++    if (EFI_ERROR(Status)) {
++        AppleSetOsHandleBuf = NULL;
++        AppleSetOsHandleCount = 0;
++    }
++
++    {
++        CHAR16 m[] = L"apple_set_os: protocol handles = #\r\n";
++        for (UINTN k = 0; m[k]; k++)
++            if (m[k] == L'#')
++                m[k] = (CHAR16)(L'0' + (AppleSetOsHandleCount > 9 ? 9 : AppleSetOsHandleCount));
++        ASO_LOG(m);
++    }
+@@ -153,0 +180 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
++    UINTN AppleSetOsApplied = 0;
+@@ -166,0 +194,17 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
++            ASO_LOG(L"apple_set_os: OpenProtocol failed\r\n");
++            continue;
++        }
++
++        /*
++         * Follow 0xbb/apple_set_os.efi, which is the implementation this
++         * firmware is actually known to accept. SetOsVersion is only
++         * meaningful when the interface advertises a version, but SetOsVendor
++         * is the call that unlocks the iGPU and must be made either way.
++         * This fork guarded *both* behind Version != 0, so on firmware that
++         * reports version 0 it quietly did nothing at all.
++         */
++        if (SetOsIface->Version != 0) {
++            Status = SetOsIface->SetOsVersion((CHAR8*) APPLE_SET_OS_VERSION);
++            ASO_LOG(EFI_ERROR(Status)
++                    ? L"apple_set_os: SetOsVersion failed\r\n"
++                    : L"apple_set_os: SetOsVersion ok\r\n");
+@@ -168,4 +212 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
+-            if (SetOsIface->Version != 0){
+-                Status = SetOsIface->SetOsVendor((CHAR8*) APPLE_SET_OS_VENDOR);
+-                Status = SetOsIface->SetOsVersion((CHAR8*) APPLE_SET_OS_VERSION);
+-            }
++            ASO_LOG(L"apple_set_os: interface reports version 0\r\n");
+@@ -172,0 +214,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
++
++        Status = SetOsIface->SetOsVendor((CHAR8*) APPLE_SET_OS_VENDOR);
++        ASO_LOG(EFI_ERROR(Status)
++                ? L"apple_set_os: SetOsVendor FAILED\r\n"
++                : L"apple_set_os: SetOsVendor ok\r\n");
++        if (!EFI_ERROR(Status))
++            AppleSetOsApplied++;
+@@ -175 +223,9 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
+-    _INT_FreePool(BS, AppleSetOsHandleBuf);
++    if (AppleSetOsApplied == 0)
++        ASO_LOG(L"apple_set_os: NOTHING APPLIED - iGPU will stay locked\r\n");
++
++#ifdef APPLE_SET_OS_VERBOSE
++    BS->Stall(6000000);
++#endif
++
++    if (AppleSetOsHandleBuf)
++        _INT_FreePool(BS, AppleSetOsHandleBuf);
