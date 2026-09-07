@@ -20,6 +20,7 @@ hosts/
 system/                generic system policy
 modules/
   browsers/            librewolf
+  desktop/             KDE Plasma preferences
   shell/               zsh
 ```
 
@@ -30,7 +31,8 @@ hardware lives under `hosts/peach/`.
 
 - zsh (system shell + home-manager config: oh-my-zsh, autosuggestions, syntax highlighting)
 - LibreWolf (default browser, VA-API hardware decode, persistent sessions)
-- SDDM display manager, KDE Plasma 6, Ghostty as the default terminal
+- SDDM display manager, KDE Plasma 6 with Breeze Dark and 175% display scaling
+- Ghostty as the default terminal
 - PipeWire, NetworkManager, Bluetooth, systemd-boot
 - Radeon R9 M370X on `amdgpu`, Iris Pro 5200 on `i915`
 - FaceTime HD webcam (`facetimehd`)

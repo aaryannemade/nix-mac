@@ -11,6 +11,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    plasma-manager = {
+      url = "github:nix-community/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+
     # Upstream-maintained quirks for this exact machine: the XHC1 wakeup udev
     # rule that stops spurious resume-after-suspend, Intel GPU defaults, fstrim,
     # mbpfan, and the laptop TLP/power-profiles-daemon interlock.

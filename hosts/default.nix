@@ -34,6 +34,7 @@ in
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
+          sharedModules = [ inputs.plasma-manager.homeModules.plasma-manager ];
           users.${username} = import ../home.nix;
           backupFileExtension = "backup";
 
