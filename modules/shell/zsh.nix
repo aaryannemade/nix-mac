@@ -25,6 +25,9 @@
       cat = "bat";
       c = "clear";
       ll = "ls -la";
+      gpu-on = "sudo sh -c 'echo ON > /sys/kernel/debug/vgaswitcheroo/switch'";
+      gpu-off = "sudo sh -c 'echo OFF > /sys/kernel/debug/vgaswitcheroo/switch'";
+      gpu-status = "sudo cat /sys/kernel/debug/vgaswitcheroo/switch";
     };
   };
 }

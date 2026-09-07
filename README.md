@@ -81,6 +81,23 @@ switching: the AMD card cannot be used for PRIME offload while it is powered
 off. Set `panelGpu = "discrete"` near the top of `graphics.nix`, rebuild, and
 reboot to return to the AMD-driven mode.
 
+For occasional PRIME offload without moving the panel away from Intel, use the
+zsh aliases to power the AMD GPU on and off around the application:
+
+```sh
+gpu-on
+gpu-status                    # AMD DIS entry should show Pwr
+DRI_PRIME=1 application       # OpenGL
+DRI_PRIME=1! application      # Vulkan; expose only the AMD GPU
+gpu-off                       # after every dGPU application has exited
+gpu-status                    # AMD DIS entry should show Off
+```
+
+For a Steam game, run `gpu-on`, set its launch options to
+`DRI_PRIME=1 %command%`, and run `gpu-off` after Steam and the game have
+released the GPU. `gpu-status` reports the state; the AMD `DIS` entry should
+show `Pwr` while enabled and `Off` after `gpu-off`.
+
 **GPU recovery.** An NVRAM reset (hold Command-Option-P-R through two startup
 chimes) clears `gpu-power-prefs` and returns the panel to the AMD default. On
 the first NixOS boot after a reset, the declarative service writes the Intel
